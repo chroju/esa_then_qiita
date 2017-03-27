@@ -55,7 +55,6 @@ def index():
         "text": u"esa.io -> qiita done.\n{}".format(r.json()["url"]),
         "channel": u"develops"
     }
-    print r.status_code
     if r.status_code == 201 and SLACK_HOOK_URL != "":
-        re = requests.post(url=SLACK_HOOK_URL, data=json.dumps(slack_input_dict))
+        requests.post(url=SLACK_HOOK_URL, data=json.dumps(slack_input_dict))
     return r.text
