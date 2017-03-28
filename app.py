@@ -8,23 +8,27 @@ app = Chalice(app_name='esa_then_qiita')
 app.debug = True
 API_URL = u"http://qiita.com/api/v2/"
 
-API_KEY = os.environ["QIITA_API_KEY"]
-QIITA_USER = os.environ["QIITA_USER"]
-SLACK_HOOK_URL = os.environ["SLACK_HOOK_URL"]
+filename = os.path.join(os.path.dirname(__file__), "chalicelib", "config.json")
+with open(filename) as f:
+    config = json.load(f)
+API_KEY = config["QIITA_API_KEY"]
+SLACK_HOOK_URL = config["SLACK_HOOK_URL"]
+SLACK_CHANNEL = config["SLACK_CHANNEL"]
 
 @app.route('/qiita', methods=['POST'])
 def index():
     # parse request
     request = app.current_request.json_body
     raw_title = request["post"]["name"].split(u"/")[-1]
+    username = request["user"]["screen_name"]
     title_and_tags = [ i.strip() for i in raw_title.split("#") ]
 
     # find qiita tag
-    if u"qiita" not in title_and_tags:
-        return u"nothing to do (this is not the post for qiita)"
+    if u"qiita" not in title_and_tags[1:]:
+        return u"nothing to do (this post is not for qiita)"
 
     # check articles duplication
-    past_items = requests.get(url=API_URL + 'items?page=1&per_page=20&query=user%3A' + QIITA_USER)
+    past_items = requests.get(url=API_URL + 'items?page=1&per_page=20&query=user%3A' + username)
     past_titles = [ item["title"] for item in past_items.json() ]
     while "next" in past_items.links:
         past_items = requests.get(past_items.links["next"]["url"])
@@ -53,7 +57,7 @@ def index():
     # post result to slack
     slack_input_dict = {
         "text": u"esa.io -> qiita done.\n{}".format(r.json()["url"]),
-        "channel": u"develops"
+        "channel": SLACK_CHANNEL
     }
     if r.status_code == 201 and SLACK_HOOK_URL != "":
         requests.post(url=SLACK_HOOK_URL, data=json.dumps(slack_input_dict))
