@@ -34,7 +34,7 @@ Edit `chalicelib/config.json`. If you don't need Slack integration, it is not ne
 
 Install chalice, and deploy esa_then_qiita.
 
-```python
+```bash
 $ pip install chalice
 $ chalice deploy
 Updating IAM policy.
